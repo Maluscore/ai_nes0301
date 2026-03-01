@@ -48,6 +48,7 @@ export class Bus implements CpuBus {
 
   write(addr: number, value: number): void {
     addr &= 0xFFFF;
+    value &= 0xFF;
     if (addr < 0x2000) {
       this.ram[addr & 0x07FF] = value;
     } else if (addr < 0x4000) {

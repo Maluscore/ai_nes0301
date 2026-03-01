@@ -14,7 +14,13 @@ export class AudioOutput {
   }
 
   async init(): Promise<void> {
-    this.ctx = new AudioContext({ sampleRate: 44100 });
+    try {
+      this.ctx = new AudioContext({ sampleRate: 44100 });
+    } catch {
+      console.error('Web Audio API not available');
+      return;
+    }
+
     this.gainNode = this.ctx.createGain();
     this.gainNode.connect(this.ctx.destination);
 
