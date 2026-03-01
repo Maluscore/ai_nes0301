@@ -4,6 +4,7 @@ import type { CpuBus } from './cpu';
 import type { PPU } from './ppu';
 import type { Mapper } from './mapper';
 import type { Controller } from './controller';
+import type { APU } from './apu/apu';
 
 export class Bus implements CpuBus {
   private readonly ram = new Uint8Array(2048);
@@ -11,17 +12,19 @@ export class Bus implements CpuBus {
   private mapper!: Mapper;
   private controller1!: Controller;
   private controller2!: Controller;
+  private apu!: APU;
 
   // DMA state
   dmaPending = false;
   dmaPage = 0;
   dmaTransferring = false;
 
-  connect(ppu: PPU, mapper: Mapper, ctrl1: Controller, ctrl2: Controller): void {
+  connect(ppu: PPU, mapper: Mapper, ctrl1: Controller, ctrl2: Controller, apu: APU): void {
     this.ppu = ppu;
     this.mapper = mapper;
     this.controller1 = ctrl1;
     this.controller2 = ctrl2;
+    this.apu = apu;
   }
 
   read(addr: number): number {
@@ -30,12 +33,13 @@ export class Bus implements CpuBus {
       return this.ram[addr & 0x07FF];
     } else if (addr < 0x4000) {
       return this.ppu.readRegister(addr);
+    } else if (addr === 0x4015) {
+      return this.apu.readRegister(addr);
     } else if (addr === 0x4016) {
       return this.controller1.read();
     } else if (addr === 0x4017) {
-      return this.controller2.read();
+      return this.controller2.read(); // $4017 READ = controller 2
     } else if (addr < 0x4020) {
-      // APU & IO registers - return 0 (APU not implemented)
       return 0;
     } else {
       return this.mapper.cpuRead(addr);
@@ -55,8 +59,10 @@ export class Bus implements CpuBus {
     } else if (addr === 0x4016) {
       this.controller1.write(value);
       this.controller2.write(value);
+    } else if (addr <= 0x4013 || addr === 0x4015 || addr === 0x4017) {
+      this.apu.writeRegister(addr, value); // $4017 WRITE = APU frame counter
     } else if (addr < 0x4020) {
-      // APU registers - ignore
+      // Other IO
     } else {
       this.mapper.cpuWrite(addr, value);
     }

@@ -29,11 +29,20 @@
       border: 2px solid #333;
     }
     #status { font-size: 14px; }
+    #controls { display: flex; gap: 8px; }
+    #mute-btn {
+      background: #333; color: #aaa; border: 1px solid #555;
+      padding: 4px 12px; font-family: monospace; font-size: 13px; cursor: pointer;
+    }
+    #mute-btn:hover { background: #444; }
   </style>
 </head>
 <body>
   <div id="container">
     <canvas id="screen" width="256" height="240"></canvas>
+    <div id="controls">
+      <button id="mute-btn">Mute (M)</button>
+    </div>
     <div id="status">Loading ROM...</div>
   </div>
   <script type="module" src="/src/main.ts"></script>

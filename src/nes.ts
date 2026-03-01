@@ -1,15 +1,17 @@
-// NES System - component orchestration + CPU/PPU synchronization
+// NES System - component orchestration + CPU/PPU/APU synchronization
 
 import { CPU } from './cpu';
 import { PPU } from './ppu';
 import { Bus } from './bus';
 import { Controller } from './controller';
+import { APU } from './apu/apu';
 import { type CartridgeData, parseRom } from './cartridge';
 import { createMapper, type Mapper } from './mapper';
 
 export class NES {
   readonly cpu: CPU;
   readonly ppu: PPU;
+  readonly apu: APU;
   readonly bus: Bus;
   readonly controller1: Controller;
   readonly controller2: Controller;
@@ -24,16 +26,19 @@ export class NES {
     this.ppu = new PPU();
     this.ppu.setMapper(this.mapper);
 
+    this.apu = new APU();
+
     this.bus = new Bus();
     this.controller1 = new Controller();
     this.controller2 = new Controller();
-    this.bus.connect(this.ppu, this.mapper, this.controller1, this.controller2);
+    this.bus.connect(this.ppu, this.mapper, this.controller1, this.controller2, this.apu);
 
     this.cpu = new CPU(this.bus);
   }
 
   reset(): void {
     this.ppu.reset();
+    this.apu.reset();
     this.cpu.reset();
     this.totalCycles = 0;
   }
@@ -58,6 +63,7 @@ export class NES {
         this.ppu.tick();
         this.checkNmi();
       }
+      this.apu.tick(dmaCycles);
       this.totalCycles += dmaCycles;
       return;
     }
@@ -70,6 +76,9 @@ export class NES {
       this.ppu.tick();
       this.checkNmi();
     }
+
+    // APU runs at 1x CPU clock
+    this.apu.tick(cpuCycles);
   }
 
   private checkNmi(): void {
